@@ -15,9 +15,6 @@ namespace eosio {
    using std::string;
 
    class [[eosio::contract("factfinder")]] factfinder : public contract {
-      private:
-      const symbol eos_symbol;
-
       public:
          using contract::contract;
          
@@ -131,7 +128,9 @@ namespace eosio {
          using castvote_action = eosio::action_wrapper<"castvote"_n, &factfinder::castvote>;
          using withdraw_action = eosio::action_wrapper<"withdraw"_n, &factfinder::withdraw>;
          
-      private:
+      private:   
+         const symbol eos_symbol;
+
          struct [[eosio::table]] vote {
             asset    amount;
             name     voter;

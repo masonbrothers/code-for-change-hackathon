@@ -1,2 +1,2 @@
 all:
-	eosio-cpp contract.cpp -abigen
+	eosio-cpp contract.cpp -abigen -abigen_output=test.abi
