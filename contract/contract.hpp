@@ -36,6 +36,7 @@ namespace eosio {
 
          [[eosio::action]]
          void post( const name& poster, const std::string& message ) {
+            /*
             require_auth( poster );
 
             check( is_account( poster ), "poster account does not exist" );
@@ -59,8 +60,10 @@ namespace eosio {
             indicies.modify(i, get_self(), [&]( auto& s ) {
                s.message_index += 1;
             });
+            */
          }
 
+         /*
          [[eosio::on_notify("eosio.token::transfer")]]
          void castvote( const name& voter, const uint64_t& message_id, const asset& amount, const bool& is_true ) {
             require_auth( voter );
@@ -69,29 +72,54 @@ namespace eosio {
             index_table indicies( get_self(), get_first_receiver().value );
             index i = indicies.get(0);
             
-            message_table messages;
+            message_table messages( get_self(), get_first_receiver().value );
             auto msg = messages.find(message_id);
 
             if (msg == messages.end()) {
                check(false, "message does not exist");
             }
 
-            check(isActive(msg), "voting is over");
-            check(quantity.amount > 0, "amount must be positive");
-            check(quantity.symbol == eos_symbol, "only SYS tokens are accepted");
+            check(is_active(msg), "voting is over");
+            check(amount.amount > 0, "amount must be positive");
+            check(amount.symbol == eos_symbol, "only SYS tokens are accepted");
             
+            vote_table votes( get_self(), get_first_receiver().value );
+            
+            votes.emplace(get_self(), [&](auto &s) {
+               s.amount = amount;
+               s.voter = voter;
+               s.vote_on = message_id;
+               s.vote_id = i.vote_index + 1;
+            });
+
+            indicies.modify(i, get_self(), [&]( auto& s ) {
+               s.vote_index += 1;
+            });
+
+            if (is_true) {
+               messages.modify(msg, get_self(), [&](auto &s) {
+                  s.staked_true += amount.amount;
+               });
+            } else {
+               messages.modify(msg, get_self(), [&](auto &s) {
+                  s.staked_false += amount.amount;
+               });
+            }
             
          };
+         */
 
          [[eosio::action]]
          void withdraw( const uint64_t& vote_id ) {
-            check(!isActive(message), "cannot withdraw as voting is not over");
+            //check(!is_active(message), "cannot withdraw as voting is not over");
+            /*
             action{
                permission_level{get_self(), "active"_n},
                "eosio.token"_n,
                "transfer"_n,
                std::make_tuple(owner, get_self() hodl_it->funds, std::string("Staking Tokens for Voting"))
             }.send();
+            */
             /*
             action{
                permission_level{get_self(), "active"_n},
@@ -100,14 +128,14 @@ namespace eosio {
                std::make_tuple(get_self(),  hodl_it->funds, std::string("Staking Tokens for Voting"))
             }.send();
             */
-         }
+         };
 
          using post_action = eosio::action_wrapper<"post"_n, &factfinder::post>;
-         using castvote_action = eosio::action_wrapper<"castvote"_n, &factfinder::castvote>;
+         //using castvote_action = eosio::action_wrapper<"castvote"_n, &factfinder::castvote>;
          using withdraw_action = eosio::action_wrapper<"withdraw"_n, &factfinder::withdraw>;
       private:
          struct [[eosio::table]] vote {
-            asset    balance;
+            asset    amount;
             name     voter;
             uint64_t vote_on;
             uint64_t vote_id;
@@ -137,8 +165,8 @@ namespace eosio {
          typedef eosio::multi_index< "indecies"_n, index > index_table;
 
 
-         bool is_active(const message& msg) {
-            return (msg.post_time + time_point(seconds(SECONDS_VOTING_LASTS))) < eosio::current_time_point();
+         bool is_active(const message_table::const_iterator& msg) {
+            return (msg->post_time + time_point(seconds(SECONDS_VOTING_LASTS))) < eosio::current_time_point();
          }
    };
 
