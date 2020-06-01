@@ -1,2 +1,2 @@
 all:
-	eosio-cpp src/contract.cpp -Iinclude
+	eosio-cpp contract.cpp
