@@ -2,3 +2,6 @@
 
 
 // Please see contract.hpp for source
+
+namespace eosio {
+}

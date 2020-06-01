@@ -36,9 +36,7 @@ namespace eosio {
 
          [[eosio::action]]
          void post( const name& poster, const std::string& message ) {
-            /*
             require_auth( poster );
-
             check( is_account( poster ), "poster account does not exist" );
 
             index_table indicies( get_self(), get_first_receiver().value );
@@ -60,10 +58,8 @@ namespace eosio {
             indicies.modify(i, get_self(), [&]( auto& s ) {
                s.message_index += 1;
             });
-            */
          }
 
-         /*
          [[eosio::on_notify("eosio.token::transfer")]]
          void castvote( const name& voter, const uint64_t& message_id, const asset& amount, const bool& is_true ) {
             require_auth( voter );
@@ -74,10 +70,8 @@ namespace eosio {
             
             message_table messages( get_self(), get_first_receiver().value );
             auto msg = messages.find(message_id);
-
-            if (msg == messages.end()) {
-               check(false, "message does not exist");
-            }
+            
+            check(msg != messages.end(), "message does not exist");
 
             check(is_active(msg), "voting is over");
             check(amount.amount > 0, "amount must be positive");
@@ -89,6 +83,7 @@ namespace eosio {
                s.amount = amount;
                s.voter = voter;
                s.vote_on = message_id;
+               s.is_true = is_true;
                s.vote_id = i.vote_index + 1;
             });
 
@@ -107,37 +102,43 @@ namespace eosio {
             }
             
          };
-         */
 
          [[eosio::action]]
          void withdraw( const uint64_t& vote_id ) {
-            //check(!is_active(message), "cannot withdraw as voting is not over");
-            /*
+            vote_table votes( get_self(), get_first_receiver().value );
+            auto v = votes.find(vote_id);
+
+            check(v != votes.end(), "vote_id is not a cast vote");
+
+            require_auth(v->voter);
+
+            message_table messages( get_self(), get_first_receiver().value );
+            auto msg = messages.find(v->vote_on);
+            
+            check(msg != messages.end(), "message does not exist");
+
+            check(!is_active(msg), "cannot withdraw as voting is not over");
+            
+            check(v->is_true == (msg->staked_true > msg->staked_false), "stake lost as consensus determined opposite of vote");
+
             action{
                permission_level{get_self(), "active"_n},
                "eosio.token"_n,
                "transfer"_n,
-               std::make_tuple(owner, get_self() hodl_it->funds, std::string("Staking Tokens for Voting"))
+               std::make_tuple(get_self(), v->voter, v->amount, std::string("Return Staked Tokens from Voting"))
             }.send();
-            */
-            /*
-            action{
-               permission_level{get_self(), "active"_n},
-               "eosio.token"_n,
-               "transfer"_n,
-               std::make_tuple(get_self(),  hodl_it->funds, std::string("Staking Tokens for Voting"))
-            }.send();
-            */
          };
 
          using post_action = eosio::action_wrapper<"post"_n, &factfinder::post>;
-         //using castvote_action = eosio::action_wrapper<"castvote"_n, &factfinder::castvote>;
+         using castvote_action = eosio::action_wrapper<"castvote"_n, &factfinder::castvote>;
          using withdraw_action = eosio::action_wrapper<"withdraw"_n, &factfinder::withdraw>;
+         
       private:
          struct [[eosio::table]] vote {
             asset    amount;
             name     voter;
             uint64_t vote_on;
+            bool     is_true;
             uint64_t vote_id;
             uint64_t primary_key()const { return vote_id; }
          };
