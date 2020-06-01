@@ -14,8 +14,17 @@
                 {
                     "name": "message_index",
                     "type": "uint64"
+                },
+                {
+                    "name": "only",
+                    "type": "uint64"
                 }
             ]
+        },
+        {
+            "name": "init",
+            "base": "",
+            "fields": []
         },
         {
             "name": "message",
@@ -99,6 +108,11 @@
         }
     ],
     "actions": [
+        {
+            "name": "init",
+            "type": "init",
+            "ricardian_contract": ""
+        },
         {
             "name": "post",
             "type": "post",

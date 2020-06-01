@@ -22,12 +22,21 @@ namespace eosio {
             contract(receiver, code, ds),
             eos_symbol("SYS", 4){
 
-               index_table indicies( get_self(), get_first_receiver().value );
-               indicies.emplace(get_self(), [&]( auto& s ) {
-                  s.vote_index = 0;
-                  s.message_index = 0;
-               });
+               
             }
+
+         [[eosio::action]]
+         void init() {
+            index_table indicies( get_self(), get_first_receiver().value );
+            auto i = indicies.find(0);
+            check(i == indicies.end(), "Contract has already been initialized");
+            indicies.emplace(get_self(), [&]( auto& s ) {
+                s.vote_index = 0;
+                s.message_index = 0;
+                s.only = 0;
+            });
+         }
+        
 
         /**
           * Post message from poster
@@ -40,7 +49,8 @@ namespace eosio {
             check( is_account( poster ), "poster account does not exist" );
 
             index_table indicies( get_self(), get_first_receiver().value );
-            index i = indicies.get(0);
+            auto i = indicies.find(0);
+            check(i != indicies.end(), "Contract has not been initialized please call init");
             
             message_table messages( get_self(), get_first_receiver().value );
 
@@ -49,24 +59,34 @@ namespace eosio {
             messages.emplace( poster, [&]( auto& s ) {
                s.poster = poster;
                s.message = message;
-               s.message_id    = i.message_index + 1;
+               s.message_id    = i->message_index + 1;
                s.post_time     = current_time;
                s.staked_true   = 0;
                s.staked_false  = 0;
             });
 
             indicies.modify(i, get_self(), [&]( auto& s ) {
-               s.message_index += 1;
+               s.message_index = i->message_index + 1;
             });
          }
 
          [[eosio::on_notify("eosio.token::transfer")]]
-         void castvote( const name& voter, const uint64_t& message_id, const asset& amount, const bool& is_true ) {
+         void castvote( const name& voter, const name& receiver, const asset& amount, const std::string& memo ) {
+            check(memo.length() >= 2, "memo must be t/f then message_id example t1");
+            
+            check(memo.at(0) == 't' || memo.at(0) == 'f', "memo must start with t or f");
+            const bool is_true = memo.at(0) == 't';
+
+            const uint64_t message_id = std::atoi(memo.substr(1).c_str());
+            
             require_auth( voter );
             check( is_account( voter ), "voter account does not exist" );
 
+            check(receiver == get_self() && voter != get_self(), "This is not the correct function");
+
             index_table indicies( get_self(), get_first_receiver().value );
-            index i = indicies.get(0);
+            auto i = indicies.find(0);
+            check(i != indicies.end(), "Contract has not been initialized please call init");
             
             message_table messages( get_self(), get_first_receiver().value );
             auto msg = messages.find(message_id);
@@ -84,11 +104,11 @@ namespace eosio {
                s.voter = voter;
                s.vote_on = message_id;
                s.is_true = is_true;
-               s.vote_id = i.vote_index + 1;
+               s.vote_id = i->vote_index + 1;
             });
 
             indicies.modify(i, get_self(), [&]( auto& s ) {
-               s.vote_index += 1;
+               s.vote_index = i->vote_index + 1;
             });
 
             if (is_true) {
@@ -105,6 +125,10 @@ namespace eosio {
 
          [[eosio::action]]
          void withdraw( const uint64_t& vote_id ) {
+            index_table indicies( get_self(), get_first_receiver().value );
+            auto i = indicies.find(0);
+            check(i != indicies.end(), "Contract has not been initialized please call init");
+
             vote_table votes( get_self(), get_first_receiver().value );
             auto v = votes.find(vote_id);
 
@@ -129,6 +153,7 @@ namespace eosio {
             }.send();
          };
 
+         using init_action = eosio::action_wrapper<"init"_n, &factfinder::init>;
          using post_action = eosio::action_wrapper<"post"_n, &factfinder::post>;
          using castvote_action = eosio::action_wrapper<"castvote"_n, &factfinder::castvote>;
          using withdraw_action = eosio::action_wrapper<"withdraw"_n, &factfinder::withdraw>;
@@ -159,8 +184,8 @@ namespace eosio {
          struct [[eosio::table]] index {
             uint64_t vote_index;
             uint64_t message_index;
-
-            uint64_t primary_key()const { return 0; }
+            uint64_t only;
+            uint64_t primary_key()const { return only; }
          };
 
          typedef eosio::multi_index< "messages"_n, message > message_table;
