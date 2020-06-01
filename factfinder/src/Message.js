@@ -1,22 +1,35 @@
 import React from 'react';
 
-import InputGroup from 'react-bootstrap/InputGroup';
-import FormControl from 'react-bootstrap/FormControl';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
+import eos from './eos';
 
-function Message ({name, message, isTrue, onIsTrueChange}) {
+class Message extends React.Component {
+    state = {
+        is_true: true,
+        amount: 0
+    }
+
+    onis_trueChange = (value) => {
+        this.setState({is_true: value})
+    }
+
+    submitVote = async () => {
+        eos.castvote(this.props.key, this.state.name, this.props.message_id, this.state.amount, this.state.is_true)
+    }
+
+    render() {
         return (
             <Card>
             <Card.Body>
             <h6>
-                <Badge variant="secondary">{name}</Badge>
+                <Badge variant="secondary">{this.props.name}</Badge>
             </h6>
-            <h2>{message}</h2>
+            <h2>{this.props.message}</h2>
             
         
 
@@ -30,14 +43,14 @@ function Message ({name, message, isTrue, onIsTrueChange}) {
                         <Form.Check
                         type="radio"
                         label="True"
-                        onClick={() => onIsTrueChange(true)}
-                        checked={isTrue}
+                        onChange={() => this.onis_trueChange(true)}
+                        checked={this.state.is_true}
                         />
                         <Form.Check
                         type="radio"
                         label="False"
-                        onClick={() => onIsTrueChange(false)}
-                        checked={!isTrue}
+                        onChange={() => this.onis_trueChange(false)}
+                        checked={!this.state.is_true}
                         />
                     </Col>
                     </Form.Group>
@@ -48,13 +61,15 @@ function Message ({name, message, isTrue, onIsTrueChange}) {
                     Stake Amount
                     </Form.Label>
                     <Col sm={10}>
-                    <Form.Control type="number" placeholder="Stake Amount" />
+                    <Form.Control type="number" placeholder="Stake Amount" value={this.state.amount} onChange={(e) => {this.setState({amount: e.target.value})}}/>
                     </Col>
                 </Form.Group>
 
                 <Form.Group as={Row}>
                 <Col sm={{ span: 10, offset: 2 }}>
-                <Button type="submit">Stake</Button>
+                <Button onClick={
+                    this.submitVote
+                }>Stake</Button>
                 </Col>
             </Form.Group>
             </Form>
@@ -62,6 +77,7 @@ function Message ({name, message, isTrue, onIsTrueChange}) {
             </Card.Body>
             </Card>
         );
+    }
 }
 
 export default Message;

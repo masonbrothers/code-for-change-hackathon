@@ -12,23 +12,30 @@ import Col from 'react-bootstrap/Col';
 
 import Input from 'react-bootstrap/Button';
 import eos from './eos';
+import update from 'react-addons-update'; // ES6
 import KeyAndName from './KeyAndName';
 import Message from './Message';
 import Navbar from 'react-bootstrap/Navbar'
 
 
+class App  extends React.Component {
 
-function App() {
+  state = {
+    message: '',
+    key: '',
+    name: '',
+    messages: [
+      {
+        name: 'eosuser',
+        message: 'COVID is transmitted by insects',
+        message_id: 1
+      }
+    ]
+  }
+
+  render() {
   return (
     <div>
-      <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-      crossOrigin="anonymous"
-      />
-
-
       <Navbar bg="light" expand="lg">
         <Navbar.Brand href="#home">FactFinder</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -36,30 +43,17 @@ function App() {
 
       <div className="App">
         <KeyAndName 
-          onKeyChange={(e)=>{console.log("Key:", e.target.value)}}
-          onNameChange={(e)=>{console.log("Name:", e.target.value)}}
+          onKeyChange={(e)=>{this.setState({key: e.target.value})}}
+          onNameChange={(e)=>{this.setState({name: e.target.value})}}
         />
         
         <InputGroup> 
-        
           <FormControl
             as="textarea"
             placeholder="Message"
             aria-label="Message"
-            onChange={(e) => {console.log(e.target.value)}}
+            onChange={(e) => {this.setState({message: e.target.value})}}
           />
-        </InputGroup>
-        
-        {/* EOS Account */}
-        <InputGroup className="mb-3">
-        <InputGroup.Prepend>
-          <InputGroup.Text id="basic-addon3">Reply To</InputGroup.Text>
-        </InputGroup.Prepend>
-        <FormControl
-          placeholder=""
-          aria-label="Reply To"
-          aria-describedby="basic-addon3"
-        />
         </InputGroup>
 
         {/* Stake Amount */}
@@ -73,19 +67,17 @@ function App() {
           aria-describedby="basic-addon3"
         />
         </InputGroup>
-
-    
-
-
-    
-
-        <Button>Post</Button>
-
-        <Message name='eosuser' message='COVID is transmitted by insects' isTrue={false} onIsTrueChange={console.log}/>
+        
+        <Button onClick={() => {eos.post(this.state.key, this.state.name, this.state.message)}}>Post</Button>
+        <br/><br/><br/>
+        {this.state.messages.map((message) => {return (
+          <Message name={message.name} message={message.message} key={this.state.key} voter={this.state.name} message_id={message.message_id}/>
+        )}) }
 
       </div>
     </div>
   );
+      }
 }
 
 export default App;
