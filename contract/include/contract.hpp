@@ -42,8 +42,7 @@ namespace eosio {
 
             index_table indicies( get_self(), get_first_receiver().value );
             index i = indicies.get(0);
-            // TODO NEED TO UPDATE INDEX
-
+            
             message_table messages( get_self(), get_first_receiver().value );
 
             time_point current_time = current_time_point();
@@ -55,6 +54,10 @@ namespace eosio {
                s.post_time     = current_time;
                s.staked_true   = 0;
                s.staked_false  = 0;
+            });
+
+            indicies.modify(i, get_self(), [&]( auto& s ) {
+               s.message_index += 1;
             });
 
          }
