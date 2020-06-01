@@ -1,3 +1,5 @@
+#pragma once
+
 #include <eosio/asset.hpp>
 #include <eosio/eosio.hpp>
 
@@ -29,6 +31,11 @@ namespace eosio {
                });
             }
 
+        /**
+          * Post message from poster
+          * @param poster - the account to post from,
+          * @param message - the message to be posted,
+          */
          [[eosio::action]]
          void post( const name& poster, const std::string& message ) {
             require_auth( poster );
@@ -163,7 +170,7 @@ namespace eosio {
          typedef eosio::multi_index< "indecies"_n, index > index_table;
 
 
-         bool is_active(const message_table::const_iterator& msg) {
+         static bool is_active(const message_table::const_iterator& msg) {
             return (msg->post_time + time_point(seconds(SECONDS_VOTING_LASTS))) < eosio::current_time_point();
          }
    };
